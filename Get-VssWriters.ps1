@@ -89,13 +89,21 @@
 
     Write-Debug "Capturing Vss Writers"
     $Writers = @()
+    $progressRate = 0
     foreach($computer in $ComputerName)
     {
+        $percentCompleteRate = "{0:N0}" -f ($progressRate*100/$ComputerName.Count)
+        Write-Progress -Activity "Processing $computer." -Status "$progressRate% Complete:" -PercentComplete $progressRate
+        <#
+        $progress = "{0:N0}" -f ($progressRate*100/$ComputerName.Count)
+        Write-Progress -Activity "Processing computer $computer ... $progressRate out of $($ComputerName.Count) computers" `
+            -PercentComplete $progress -Status "Please wait" -CurrentOperation "$progress% complete"
+        #>
         if($computer -ne $env:COMPUTERNAME)
         {
             try
             {
-                $RawWriters += Invoke-Command -ComputerName $computer -ScriptBlock { VssAdmin List Writers } -ErrorAction Stop
+                $RawWriters += Invoke-Command -ComputerName $computer -ScriptBlock { VssAdmin List Writers } -ErrorAction Stop | Select-Object -Skip 2
             }
             catch
             {
@@ -104,7 +112,7 @@
         }
         else
         {
-            $RawWriters += VssAdmin List Writers
+            $RawWriters += VssAdmin List Writers | Select-Object -Skip 2
         }
 
         Write-Debug "Building results"
@@ -129,6 +137,7 @@
             $Writer | Add-Member -MemberType NoteProperty -Name "LastError" -Value $RawWriters[($i*6)+7].Trim().SubString($LastErrorX,$LastErrorY).Trim()
             $Writers += $Writer
         }
+        $progressRate++
     }
 
     Write-Debug "Done"
