@@ -89,6 +89,7 @@
 
     Write-Debug "Capturing Vss Writers"
     $Writers = @()
+    $RawWriters = @()
     $progressRate = 0
     foreach($computer in $ComputerName)
     {
@@ -103,7 +104,7 @@
         {
             try
             {
-                $RawWriters += Invoke-Command -ComputerName $computer -ScriptBlock { VssAdmin List Writers } -ErrorAction Stop | Select-Object -Skip 2
+                $RawWriters += Invoke-Command -ComputerName $computer -ScriptBlock { VssAdmin List Writers } -ErrorAction Stop | Select-Object -Skip 3 | Select-Object -SkipLast 1
             }
             catch
             {
@@ -112,29 +113,29 @@
         }
         else
         {
-            $RawWriters += VssAdmin List Writers | Select-Object -Skip 2
+            $RawWriters += VssAdmin List Writers | Select-Object -Skip 3 | Select-Object -SkipLast 1
         }
 
         Write-Debug "Building results"
-        for ($i=0; $i -lt ($RawWriters.Count-3)/6; $i++) {
-            $WriterIdX = $RawWriters[($i*6)+4].Trim().IndexOf("{")
-            $WriterIdY = $RawWriters[($i*6)+4].Trim().IndexOf("}") + 1 - $WriterIdX
-            $InstanceIdX = $RawWriters[($i*6)+5].Trim().IndexOf("{")
-            $InstanceIdY = $RawWriters[($i*6)+5].Trim().IndexOf("}") + 1 - $InstanceIdX
-            $StateIdX = $RawWriters[($i*6)+6].Trim().IndexOf("[")
-            $StateIdY = $RawWriters[($i*6)+6].Trim().IndexOf("]") + 1 - $StateIdX
-            $StateDescX = $RawWriters[($i*6)+6].Trim().IndexOf("]") + 1
-            $StateDescY = $RawWriters[($i*6)+6].Trim().Length - $StateDescX
-            $LastErrorX = $RawWriters[($i*6)+7].Trim().IndexOf(":") + 1
-            $LastErrorY = $RawWriters[($i*6)+7].Trim().Length - $LastErrorX
+        for ($i=0; $i -lt $RawWriters.Count/6; $i++) {
+            $WriterIdX = $RawWriters[($i*6)+1].Trim().IndexOf("{")
+            $WriterIdY = $RawWriters[($i*6)+1].Trim().IndexOf("}") + 1 - $WriterIdX
+            $InstanceIdX = $RawWriters[($i*6)+2].Trim().IndexOf("{")
+            $InstanceIdY = $RawWriters[($i*6)+2].Trim().IndexOf("}") + 1 - $InstanceIdX
+            $StateIdX = $RawWriters[($i*6)+3].Trim().IndexOf("[")
+            $StateIdY = $RawWriters[($i*6)+3].Trim().IndexOf("]") + 1 - $StateIdX
+            $StateDescX = $RawWriters[($i*6)+3].Trim().IndexOf("]") + 1
+            $StateDescY = $RawWriters[($i*6)+3].Trim().Length - $StateDescX
+            $LastErrorX = $RawWriters[($i*6)+4].Trim().IndexOf(":") + 1
+            $LastErrorY = $RawWriters[($i*6)+4].Trim().Length - $LastErrorX
 
             $Writer = New-Object -TypeName PSObject
-            $Writer | Add-Member -MemberType NoteProperty -Name "WriterName" -Value $RawWriters[($i*6)+3].Split("'")[1]
-            $Writer | Add-Member -MemberType NoteProperty -Name "WriterId" -Value $RawWriters[($i*6)+4].Trim().SubString($WriterIdX, $WriterIdY)
-            $Writer | Add-Member -MemberType NoteProperty -Name "WriterInstanceId" -Value $RawWriters[($i*6)+5].Trim().SubString($InstanceIdX,$InstanceIdY)
-            $Writer | Add-Member -MemberType NoteProperty -Name "StateID" -Value $RawWriters[($i*6)+6].Trim().SubString($StateIdX,$StateIdY)
-            $Writer | Add-Member -MemberType NoteProperty -Name "StateDescription" -Value $RawWriters[($i*6)+6].Trim().SubString($StateDescX,$StateDescY).Trim()
-            $Writer | Add-Member -MemberType NoteProperty -Name "LastError" -Value $RawWriters[($i*6)+7].Trim().SubString($LastErrorX,$LastErrorY).Trim()
+            $Writer | Add-Member -MemberType NoteProperty -Name "WriterName" -Value $RawWriters[($i*6)].Split("'")[1]
+            $Writer | Add-Member -MemberType NoteProperty -Name "WriterId" -Value $RawWriters[($i*6)+1].Trim().SubString($WriterIdX, $WriterIdY)
+            $Writer | Add-Member -MemberType NoteProperty -Name "WriterInstanceId" -Value $RawWriters[($i*6)+2].Trim().SubString($InstanceIdX,$InstanceIdY)
+            $Writer | Add-Member -MemberType NoteProperty -Name "StateID" -Value $RawWriters[($i*6)+3].Trim().SubString($StateIdX,$StateIdY)
+            $Writer | Add-Member -MemberType NoteProperty -Name "StateDescription" -Value $RawWriters[($i*6)+3].Trim().SubString($StateDescX,$StateDescY).Trim()
+            $Writer | Add-Member -MemberType NoteProperty -Name "LastError" -Value $RawWriters[($i*6)+4].Trim().SubString($LastErrorX,$LastErrorY).Trim()
             $Writers += $Writer
         }
         $progressRate++
